@@ -1,12 +1,12 @@
 
 set -e
 
-export LOCAL_PREFIX=$(realpath Python-2.7.18/build-switch/local_prefix)
-export PYTHONLIBZIP=$(realpath python27.zip)
+export LOCAL_PREFIX=$(realpath Python-3.9.22/build-switch/local_prefix)
+export PYTHONLIBZIP=$(realpath python39.zip)
 export LIB_BUILD_DIR=./tmp_lib
 
 rm -rf $LIB_BUILD_DIR $PYTHONLIBZIP
-cp -as $LOCAL_PREFIX/lib/python2.7 $LIB_BUILD_DIR
+cp -as $LOCAL_PREFIX/lib/python3.9 $LIB_BUILD_DIR
 rm -r $LIB_BUILD_DIR/test
 rm -r $LIB_BUILD_DIR/lib2to3/tests
 rm $LIB_BUILD_DIR/subprocess.py
