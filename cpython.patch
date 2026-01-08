@@ -338,8 +338,8 @@ diff -Naur a/Modules/getpath.c b/Modules/getpath.c
 +++ b/Modules/getpath.c
 @@
 +#ifdef __SWITCH__
-+static PyStatus
-+resolve_symlinks(PyPath *path) {
-+    return PYSTATUS_OK();  /* заглушка для Switch */
++/* Заглушка resolve_symlinks для Nintendo Switch */
++static PyStatus resolve_symlinks(PyPath *path) {
++    return PYSTATUS_OK();
 +}
 +#endif
