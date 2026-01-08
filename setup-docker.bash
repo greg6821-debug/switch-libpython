@@ -15,20 +15,29 @@ curl -LOC - \
 docker exec switchdev dkp-pacman -U --noconfirm \
   devkitpro-pkgbuild-helpers-2.2.3-1-any.pkg.tar.xz
 
-# System deps
+# ---- FIX DEBIAN BUSTER EOL ----
+docker exec switchdev bash -c '
+  sed -i "s|deb.debian.org|archive.debian.org|g" /etc/apt/sources.list &&
+  sed -i "s|security.debian.org|archive.debian.org|g" /etc/apt/sources.list &&
+  echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/99no-check-valid-until
+'
+
+# update after fixing repos
 docker exec switchdev apt-get update
 
+# base deps
 docker exec switchdev apt-get install -y \
-  software-properties-common \
   libc6-dev \
   curl \
-  ca-certificates
+  ca-certificates \
+  xz-utils \
+  build-essential
 
-# Python 3.9 (REQUIRED for building CPython 3.9)
+# Python for building CPython 3.9
 docker exec switchdev apt-get install -y \
-  python3.9 \
-  python3.9-dev \
-  python3.9-distutils
+  python3 \
+  python3-dev \
+  python3-distutils
 
-# sanity check (очень рекомендую)
-docker exec switchdev python3.9 --version
+# sanity check
+docker exec switchdev python3 --version
