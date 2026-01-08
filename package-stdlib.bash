@@ -14,6 +14,6 @@ ln -sf $(realpath pystub/subprocess.py) $LIB_BUILD_DIR/subprocess.py
 pushd $LIB_BUILD_DIR
 find . -type l -not -name \*.py -delete
 find . -type d -empty -delete
-find . -name \*.py -exec python2 -OO -m py_compile {} \;
+find . -name \*.py -exec python3 -OO -m py_compile {} \;
 7z a -l $PYTHONLIBZIP .
 popd
