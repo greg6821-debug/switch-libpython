@@ -336,10 +336,18 @@ diff -Naur a/configure b/configure
 diff -Naur a/Modules/getpath.c b/Modules/getpath.c
 --- a/Modules/getpath.c
 +++ b/Modules/getpath.c
-@@
+@@ -3354,6 +3354,9 @@
+ #if HAVE_READLINK
+ static PyStatus
+ resolve_symlinks(wchar_t **path_p)
+ {
+@@ -3354,6 +3357,12 @@
+ #endif /* HAVE_READLINK */
++
 +#ifdef __SWITCH__
 +/* Заглушка resolve_symlinks для Nintendo Switch */
-+static PyStatus resolve_symlinks(PyPath *path) {
-+    return PYSTATUS_OK();
++static PyStatus
++resolve_symlinks(wchar_t **path_p) {
++    return _PyStatus_OK();
 +}
 +#endif
