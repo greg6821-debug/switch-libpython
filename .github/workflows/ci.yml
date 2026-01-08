@@ -1,4 +1,4 @@
-name: continuous integration
+name: Continuous Integration
 
 on:
   push:
@@ -14,62 +14,66 @@ on:
       - "**.bash"
       - "**.yml"
   workflow_dispatch:
+
 jobs:
   build-artifact:
     name: Build
     runs-on: ubuntu-18.04
 
     steps:
-    - name: checkout repository
-      uses: actions/checkout@master
+    - name: Checkout repository
+      uses: actions/checkout@v3
       with:
         submodules: recursive
-    - name: setup environment
-      run: >-
-        sudo bash setup.bash
-    - name: setup docker
-      run: >-
-        sudo bash setup-docker.bash
-    - name: extract
-      run: >-
-        bash extract.bash
-    - name: config and build
-      run: >-
-        sudo bash build-switch-docker.bash
-    - name: package stdlib
-      run: >-
-        bash package-stdlib.bash
-    - name: upload stdlib artifact
-      uses: actions/upload-artifact@master
+
+    - name: Setup environment
+      run: sudo bash setup.bash
+
+    - name: Setup Docker
+      run: sudo bash setup-docker.bash
+
+    - name: Extract
+      run: bash extract.bash
+
+    - name: Config and build
+      run: sudo bash build-switch-docker.bash
+
+    - name: Package stdlib
+      run: bash package-stdlib.bash
+
+    - name: Upload stdlib artifact
+      uses: actions/upload-artifact@v3
       with:
         name: python39-stdlib
         path: python39.zip
-    - name: upload prefix artifact
-      uses: actions/upload-artifact@master
+
+    - name: Upload prefix artifact
+      uses: actions/upload-artifact@v3
       with:
         name: python39-switch
         path: python39-switch.tar.gz
 
   create-release:
-    needs: [build-artifact]
-    runs-on: ubuntu-20.04
+    needs: build-artifact
+    runs-on: ubuntu-22.04
     if: startsWith(github.ref, 'refs/tags/v')
+
     steps:
     - name: Download stdlib artifact
-      uses: actions/download-artifact@v1
+      uses: actions/download-artifact@v3
       with:
         name: python39-stdlib
 
     - name: Download prefix artifact
-      uses: actions/download-artifact@v1
+      uses: actions/download-artifact@v3
       with:
         name: python39-switch
 
     - name: Create release
-      uses: marvinpinto/action-automatic-releases@latest
+      uses: marvinpinto/action-automatic-releases@v1
       with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        prerelease: "${{ contains(github.ref, '-rc') }}"
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        prerelease: ${{ contains(github.ref, '-rc') }}
         files: |
           python39-stdlib/*
           python39-switch/*
