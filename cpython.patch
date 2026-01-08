@@ -1,43 +1,54 @@
-diff --git a/Lib/posixpath.py b/Lib/posixpath.py
-index bbc2369ce7..b66f013d02 100644
+diff -Naur a/Include/pyport.h b/Include/pyport.h
+--- a/Include/pyport.h
++++ b/Include/pyport.h
+@@ -838,7 +838,7 @@ extern _invalid_parameter_handler _Py_silent_invalid_parameter_handler;
+ #  error "Py_TRACE_REFS ABI is not compatible with release and debug ABI"
+ #endif
+ 
+-#if defined(__ANDROID__) || defined(__VXWORKS__)
++#if defined(__ANDROID__) || defined(__VXWORKS__) || defined(__SWITCH__)
+    /* Ignore the locale encoding: force UTF-8 */
+ #  define _Py_FORCE_UTF8_LOCALE
+ #endif
+diff -Naur a/Lib/posixpath.py b/Lib/posixpath.py
 --- a/Lib/posixpath.py
 +++ b/Lib/posixpath.py
-@@ -51,6 +51,9 @@ def normcase(s):
- 
+@@ -60,6 +60,9 @@ def normcase(s):
  def isabs(s):
      """Test whether a path is absolute"""
+     s = os.fspath(s)
 +    if sys.platform == 'horizon':
 +        i = s.find('/', 0)
 +        return (i != -1 and i != 0) and s[i - 1] == ':'
-     return s.startswith('/')
+     sep = _get_sep(s)
+     return s.startswith(sep)
  
- 
-@@ -71,6 +74,10 @@ def join(a, *p):
-             path +=  b
-         else:
-             path += '/' + b
+@@ -86,6 +89,10 @@ def join(a, *p):
+                 path += b
+             else:
+                 path += sep + b
 +        if sys.platform == 'horizon':
 +            i = b.find('/', 0)
 +            if (i != -1 and i != 0) and b[i - 1] == ':':
 +                path = b
-     return path
- 
- 
-@@ -358,7 +365,10 @@ def normpath(path):
+     except (TypeError, AttributeError, BytesWarning):
+         genericpath._check_arg_types('join', a, *p)
+         raise
+@@ -366,7 +373,10 @@ def normpath(path):
      comps = new_comps
-     path = slash.join(comps)
+     path = sep.join(comps)
      if initial_slashes:
--        path = slash*initial_slashes + path
+-        path = sep*initial_slashes + path
 +        if sys.platform == 'horizon':
 +            path = 'sdmc:/' + path
 +        else:
-+            path = slash*initial_slashes + path
++            path = sep*initial_slashes + path
      return path or dot
  
  
-@@ -386,8 +396,13 @@ symbolic links encountered in the path."""
- # encountered in the second path.
- def _joinrealpath(path, rest, seen):
+@@ -405,8 +415,13 @@ def _joinrealpath(path, rest, seen):
+         pardir = '..'
+ 
      if isabs(rest):
 -        rest = rest[1:]
 -        path = sep
@@ -51,222 +62,270 @@ index bbc2369ce7..b66f013d02 100644
  
      while rest:
          name, _, rest = rest.partition(sep)
-diff --git a/Modules/Setup.dist b/Modules/Setup.dist
-index bbc9222129..43f3ff45e7 100644
---- a/Modules/Setup.dist
-+++ b/Modules/Setup.dist
-@@ -114,7 +114,7 @@ PYTHONPATH=$(COREPYTHONPATH)
+diff -Naur a/Modules/Setup b/Modules/Setup
+--- a/Modules/Setup
++++ b/Modules/Setup
+@@ -103,8 +103,8 @@ PYTHONPATH=$(COREPYTHONPATH)
  
- posix posixmodule.c		# posix (UNIX) system calls
- errno errnomodule.c		# posix (UNIX) errno values
--pwd pwdmodule.c			# this is needed to find out the user's home dir
-+#pwd pwdmodule.c			# this is needed to find out the user's home dir
- 				# if $HOME is not set
- _sre _sre.c			# Fredrik Lundh's new regular expressions
- _codecs _codecsmodule.c		# access to the builtin codecs and codec registry
-diff --git a/Modules/_hotshot.c b/Modules/_hotshot.c
-index 4fc5cee479..57573a2588 100644
---- a/Modules/_hotshot.c
-+++ b/Modules/_hotshot.c
-@@ -934,7 +934,7 @@ calibrate(void)
- #endif
-     }
- #if defined(MS_WINDOWS) || defined(PYOS_OS2) || \
--    defined(__VMS) || defined (__QNX__)
-+    defined(__VMS) || defined (__QNX__) || defined(__SWITCH__)
-     rusage_diff = -1;
- #else
-     {
-diff --git a/Modules/posixmodule.c b/Modules/posixmodule.c
-index 7a1a6945c1..0c0688976d 100644
---- a/Modules/posixmodule.c
-+++ b/Modules/posixmodule.c
-@@ -141,6 +141,7 @@ corresponding Unix manual entries for more information on calls.");
- /* Everything needed is defined in PC/os2emx/pyconfig.h or vms/pyconfig.h */
- #else                   /* all other compilers */
- /* Unix functions that the configure script doesn't check for */
-+#if !defined(__SWITCH__)
- #define HAVE_EXECV      1
- #define HAVE_FORK       1
- #if defined(__USLC__) && defined(__SCO_VERSION__)       /* SCO UDK Compiler */
-@@ -161,6 +162,26 @@ corresponding Unix manual entries for more information on calls.");
- #define HAVE_SYSTEM     1
- #define HAVE_WAIT       1
- #define HAVE_TTYNAME    1
-+#else
-+#ifdef HAVE_GETGROUPS
-+#undef HAVE_GETGROUPS
-+#endif
-+#ifdef HAVE_SETGROUPS
-+#undef HAVE_SETGROUPS
-+#endif
-+#ifdef HAVE_SYMLINK
-+#undef HAVE_SYMLINK
-+#endif
-+#ifdef HAVE_CHROOT
-+#undef HAVE_CHROOT
-+#endif
-+#ifdef HAVE_FDATASYNC
-+#undef HAVE_FDATASYNC
-+#endif
-+#ifdef HAVE_FCHDIR
-+#undef HAVE_FCHDIR
-+#endif
-+#endif  /* ! __SWITCH__ */
- #endif  /* PYOS_OS2 && PYCC_GCC && __VMS */
- #endif  /* _MSC_VER */
- #endif  /* __BORLANDC__ */
-@@ -2854,6 +2875,7 @@ posix_system(PyObject *self, PyObject *args)
- #endif
+ posix -DPy_BUILD_CORE_BUILTIN -I$(srcdir)/Include/internal posixmodule.c # posix (UNIX) system calls
+ errno errnomodule.c			# posix (UNIX) errno values
+-pwd pwdmodule.c				# this is needed to find out the user's home dir
+-					# if $HOME is not set
++#pwd pwdmodule.c				# this is needed to find out the user's home dir
++#					# if $HOME is not set
+ _sre _sre.c				# Fredrik Lundh's new regular expressions
+ _codecs _codecsmodule.c			# access to the builtin codecs and codec registry
+ _weakref _weakref.c			# weak references
+@@ -169,26 +169,26 @@ _symtable symtablemodule.c
  
+ # Modules that should always be present (non UNIX dependent):
+ 
+-#array arraymodule.c	# array objects
+-#cmath cmathmodule.c _math.c -DPy_BUILD_CORE_MODULE # -lm # complex math library functions
+-#math mathmodule.c _math.c -DPy_BUILD_CORE_MODULE # -lm # math library functions, e.g. sin()
+-#_contextvars _contextvarsmodule.c  # Context Variables
+-#_struct _struct.c	# binary structure packing/unpacking
++array arraymodule.c	# array objects
++cmath cmathmodule.c _math.c -DPy_BUILD_CORE_MODULE # -lm # complex math library functions
++math mathmodule.c _math.c -DPy_BUILD_CORE_MODULE # -lm # math library functions, e.g. sin()
++_contextvars _contextvarsmodule.c  # Context Variables
++_struct _struct.c	# binary structure packing/unpacking
+ #_weakref _weakref.c	# basic weak reference support
+ #_testcapi _testcapimodule.c    # Python C API test module
+ #_testinternalcapi _testinternalcapi.c -I$(srcdir)/Include/internal -DPy_BUILD_CORE_MODULE  # Python internal C API test module
+-#_random _randommodule.c -DPy_BUILD_CORE_MODULE	# Random number generator
+-#_elementtree -I$(srcdir)/Modules/expat -DHAVE_EXPAT_CONFIG_H -DUSE_PYEXPAT_CAPI _elementtree.c	# elementtree accelerator
+-#_pickle _pickle.c	# pickle accelerator
+-#_datetime _datetimemodule.c	# datetime accelerator
+-#_zoneinfo _zoneinfo.c	# zoneinfo accelerator
+-#_bisect _bisectmodule.c	# Bisection algorithms
+-#_heapq _heapqmodule.c	# Heap queue algorithm
+-#_asyncio _asynciomodule.c  # Fast asyncio Future
+-#_json -I$(srcdir)/Include/internal -DPy_BUILD_CORE_BUILTIN _json.c	# _json speedups
+-#_statistics _statisticsmodule.c # statistics accelerator
++_random _randommodule.c -DPy_BUILD_CORE_MODULE	# Random number generator
++_elementtree -I$(srcdir)/Modules/expat -DHAVE_EXPAT_CONFIG_H -DUSE_PYEXPAT_CAPI _elementtree.c	# elementtree accelerator
++_pickle _pickle.c	# pickle accelerator
++_datetime _datetimemodule.c	# datetime accelerator
++_zoneinfo _zoneinfo.c	# zoneinfo accelerator
++_bisect _bisectmodule.c	# Bisection algorithms
++_heapq _heapqmodule.c	# Heap queue algorithm
++#_asyncio _asynciomodule.c  # Fast asyncio Future
++_json -I$(srcdir)/Include/internal -DPy_BUILD_CORE_BUILTIN _json.c	# _json speedups
++_statistics _statisticsmodule.c # statistics accelerator
+ 
+-#unicodedata unicodedata.c    # static Unicode character database
++unicodedata unicodedata.c    # static Unicode character database
+ 
+ 
+ # Modules with some UNIX dependencies -- on by default:
+@@ -204,10 +204,10 @@ _symtable symtablemodule.c
+ #mmap mmapmodule.c
+ 
+ # CSV file helper
+-#_csv _csv.c
++_csv _csv.c
+ 
+ # Socket module helper for socket(2)
+-#_socket socketmodule.c
++#_socket socketmodule.c
+ 
+ # Socket module helper for SSL support; you must comment out the other
+ # socket line above, and possibly edit the SSL variable:
+@@ -245,18 +245,18 @@ _symtable symtablemodule.c
+ # The _md5 module implements the RSA Data Security, Inc. MD5
+ # Message-Digest Algorithm, described in RFC 1321.
+ 
+-#_md5 md5module.c
++_md5 md5module.c
+ 
+ 
+ # The _sha module implements the SHA checksum algorithms.
+ # (NIST's Secure Hash Algorithms.)
+-#_sha1 sha1module.c
+-#_sha256 sha256module.c -DPy_BUILD_CORE_BUILTIN
+-#_sha512 sha512module.c -DPy_BUILD_CORE_BUILTIN
+-#_sha3 _sha3/sha3module.c
++_sha1 sha1module.c
++_sha256 sha256module.c -DPy_BUILD_CORE_BUILTIN
++_sha512 sha512module.c -DPy_BUILD_CORE_BUILTIN
++_sha3 _sha3/sha3module.c
+ 
+ # _blake module
+-#_blake2 _blake2/blake2module.c _blake2/blake2b_impl.c _blake2/blake2s_impl.c
++_blake2 _blake2/blake2module.c _blake2/blake2b_impl.c _blake2/blake2s_impl.c
+ 
+ # The _tkinter module.
+ #
+@@ -338,7 +338,7 @@ _symtable symtablemodule.c
+ # Andrew Kuchling's zlib module.
+ # This require zlib 1.1.3 (or later).
+ # See http://www.gzip.org/zlib/
+-#zlib zlibmodule.c -I$(prefix)/include -L$(exec_prefix)/lib -lz
++zlib zlibmodule.c -I$(prefix)/include -L$(exec_prefix)/lib -lz
+ 
+ # Interface to the Expat XML parser
+ # More information on Expat can be found at www.libexpat.org.
+diff -Naur a/Modules/clinic/posixmodule.c.h b/Modules/clinic/posixmodule.c.h
+--- a/Modules/clinic/posixmodule.c.h
++++ b/Modules/clinic/posixmodule.c.h
+@@ -1810,6 +1810,8 @@ exit:
+ 
+ #endif /* defined(HAVE_SYSTEM) && !defined(MS_WINDOWS) */
  
 +#if defined(HAVE_UMASK)
- PyDoc_STRVAR(posix_umask__doc__,
- "umask(new_mask) -> old_mask\n\n\
- Set the current numeric umask and return the previous umask.");
-@@ -2869,6 +2891,7 @@ posix_umask(PyObject *self, PyObject *args)
-         return posix_error();
-     return PyInt_FromLong((long)i);
- }
-+#endif /* defined(HAVE_UMASK) */
- 
- 
- PyDoc_STRVAR(posix_unlink__doc__,
-@@ -8919,7 +8942,9 @@ static PyMethodDef posix_methods[] = {
- #ifdef HAVE_SYSTEM
-     {"system",          posix_system, METH_VARARGS, posix_system__doc__},
- #endif
-+#ifdef HAVE_UMASK
-     {"umask",           posix_umask, METH_VARARGS, posix_umask__doc__},
-+#endif
- #ifdef HAVE_UNAME
-     {"uname",           posix_uname, METH_NOARGS, posix_uname__doc__},
- #endif /* HAVE_UNAME */
-diff --git a/Modules/timemodule.c b/Modules/timemodule.c
-index 61b8d612a4..ea18e5a2d6 100644
---- a/Modules/timemodule.c
-+++ b/Modules/timemodule.c
-@@ -808,7 +808,11 @@ inittimezone(PyObject *m) {
- #ifdef PYOS_OS2
-     PyModule_AddIntConstant(m, "timezone", _timezone);
- #else /* !PYOS_OS2 */
-+#ifdef __SWITCH__
-+    PyModule_AddIntConstant(m, "timezone", 0);
-+#else
-     PyModule_AddIntConstant(m, "timezone", timezone);
-+#endif /* __SWITCH__ */
- #endif /* PYOS_OS2 */
- #ifdef HAVE_ALTZONE
-     PyModule_AddIntConstant(m, "altzone", altzone);
-@@ -816,12 +820,25 @@ inittimezone(PyObject *m) {
- #ifdef PYOS_OS2
-     PyModule_AddIntConstant(m, "altzone", _timezone-3600);
- #else /* !PYOS_OS2 */
-+#ifdef __SWITCH__
-+    PyModule_AddIntConstant(m, "altzone", 0-3600);
-+#else
-     PyModule_AddIntConstant(m, "altzone", timezone-3600);
-+#endif
- #endif /* PYOS_OS2 */
- #endif
-+#ifdef __SWITCH__
-+    PyModule_AddIntConstant(m, "daylight", 0);
-+#else
-     PyModule_AddIntConstant(m, "daylight", daylight);
-+#endif
-+#ifdef __SWITCH__
-+    PyModule_AddObject(m, "tzname",
-+                       Py_BuildValue("(zz)", "GMT", "UTC"));
-+#else
-     PyModule_AddObject(m, "tzname",
-                        Py_BuildValue("(zz)", tzname[0], tzname[1]));
-+#endif
- #else /* !HAVE_TZNAME || __GLIBC__ || __CYGWIN__*/
- #ifdef HAVE_STRUCT_TM_TM_ZONE
-     {
-diff --git a/Python/import.c b/Python/import.c
-index b79354b37a..f963275a59 100644
---- a/Python/import.c
-+++ b/Python/import.c
-@@ -1402,6 +1402,13 @@ find_module(char *fullname, char *subname, PyObject *path, char *buf,
-         Py_DECREF(meta_path);
-     }
- 
-+    // printf("PATCH: find_module(%s)\n", fullname);
-+    if (fullname != NULL && is_builtin(fullname)) {
-+      // printf("PATCH: submodule %s is built-in!\n", fullname);
-+      strcpy(buf, fullname);
-+      return &fd_builtin;
-+    }
 +
-     if (path != NULL && PyString_Check(path)) {
-         /* The only type of submodule allowed inside a "frozen"
-            package are other frozen modules or packages. */
-diff --git a/Python/random.c b/Python/random.c
-index 000cb36938..c710ba95ea 100644
---- a/Python/random.c
-+++ b/Python/random.c
-@@ -6,6 +6,9 @@
- #if defined(HAVE_SYS_RANDOM_H) && (defined(HAVE_GETRANDOM) || defined(HAVE_GETENTROPY))
- #include <sys/random.h>
- #endif
-+#ifdef __SWITCH__
-+#include <switch/kernel/random.h>
-+#endif
- #endif
+ PyDoc_STRVAR(os_umask__doc__,
+ "umask($module, mask, /)\n"
+ "--\n"
+@@ -1843,6 +1845,8 @@ exit:
+     return return_value;
+ }
  
- #ifdef Py_DEBUG
-@@ -347,6 +350,9 @@ _PyOS_URandom(void *buffer, Py_ssize_t size)
++#endif /* defined(HAVE_UMASK) */
++
+ PyDoc_STRVAR(os_unlink__doc__,
+ "unlink($module, /, path, *, dir_fd=None)\n"
+ "--\n"
+@@ -8929,6 +8933,10 @@ exit:
+     #define OS_SYSTEM_METHODDEF
+ #endif /* !defined(OS_SYSTEM_METHODDEF) */
+ 
++#ifndef OS_UMASK_METHODDEF
++    #define OS_UMASK_METHODDEF
++#endif /* !defined(OS_UMASK_METHODDEF) */
++
+ #ifndef OS_UNAME_METHODDEF
+     #define OS_UNAME_METHODDEF
+ #endif /* !defined(OS_UNAME_METHODDEF) */
+diff -Naur a/Modules/posixmodule.c b/Modules/posixmodule.c
+--- a/Modules/posixmodule.c
++++ b/Modules/posixmodule.c
+@@ -311,6 +311,7 @@ corresponding Unix manual entries for more information on calls.");
+ #    define fsync _commit
+ #  else
+      /* Unix functions that the configure script doesn't check for */
++#    if !defined(__SWITCH__)
+ #    ifndef __VXWORKS__
+ #      define HAVE_EXECV      1
+ #      define HAVE_FORK       1
+@@ -329,6 +330,26 @@ corresponding Unix manual entries for more information on calls.");
+ #    define HAVE_SYSTEM     1
+ #    define HAVE_WAIT       1
+ #    define HAVE_TTYNAME    1
++#    else
++#    ifdef HAVE_GETGROUPS
++#      undef HAVE_GETGROUPS
++#    endif
++#    ifdef HAVE_SETGROUPS
++#      undef HAVE_SETGROUPS
++#    endif
++#    ifdef HAVE_SYMLINK
++#      undef HAVE_SYMLINK
++#    endif
++#    ifdef HAVE_CHROOT
++#      undef HAVE_CHROOT
++#    endif
++#    ifdef HAVE_FDATASYNC
++#      undef HAVE_FDATASYNC
++#    endif
++#    ifdef HAVE_FCHDIR
++#      undef HAVE_FCHDIR
++#    endif
++#    endif  /* ! __SWITCH__ */
+ #  endif  /* _MSC_VER */
+ #endif  /* ! __WATCOMC__ || __QNX__ */
+ 
+@@ -4753,6 +4774,7 @@ os_system_impl(PyObject *module, PyObject *command)
+ #endif /* HAVE_SYSTEM */
+ 
+ 
++#ifdef HAVE_UMASK
+ /*[clinic input]
+ os.umask
+ 
+@@ -4771,6 +4793,7 @@ os_umask_impl(PyObject *module, int mask)
+         return posix_error();
+     return PyLong_FromLong((long)i);
+ }
++#endif /* HAVE_UMASK */
  
  #ifdef MS_WINDOWS
-     return win32_urandom((unsigned char *)buffer, size, 1);
+ 
+diff -Naur a/Modules/timemodule.c b/Modules/timemodule.c
+--- a/Modules/timemodule.c
++++ b/Modules/timemodule.c
+@@ -45,6 +45,10 @@
+ #define _Py_timezone _timezone
+ #define _Py_daylight _daylight
+ #define _Py_tzname _tzname
 +#elif defined(__SWITCH__)
++#define _Py_timezone 0
++#define _Py_daylight 0
++#define _Py_tzname ((char*[]){"GMT", "UTC"}) /* XXX: dirty hack */
+ #else
+ #define _Py_timezone timezone
+ #define _Py_daylight daylight
+diff -Naur a/Python/bootstrap_hash.c b/Python/bootstrap_hash.c
+--- a/Python/bootstrap_hash.c
++++ b/Python/bootstrap_hash.c
+@@ -16,6 +16,9 @@
+ #  if defined(HAVE_SYS_RANDOM_H) && (defined(HAVE_GETRANDOM) || defined(HAVE_GETENTROPY))
+ #    include <sys/random.h>
+ #  endif
++#  ifdef __SWITCH__
++#    include <switch/kernel/random.h>
++#  endif
+ #  if !defined(HAVE_GETRANDOM) && defined(HAVE_GETRANDOM_SYSCALL)
+ #    include <sys/syscall.h>
+ #  endif
+@@ -517,6 +520,11 @@ pyurandom(void *buffer, Py_ssize_t size, int blocking, int raise)
+     return win32_urandom((unsigned char *)buffer, size, raise);
+ #else
+ 
++#ifdef __SWITCH__
 +    randomGet(buffer, size);
 +    return 0;
- #elif defined(PY_GETENTROPY)
-     return py_getentropy(buffer, size, 0);
- #else
-diff --git a/Python/thread_pthread.h b/Python/thread_pthread.h
-index 4d792a123a..da973d7322 100644
++#endif
++
+ #if defined(PY_GETRANDOM) || defined(PY_GETENTROPY)
+     if (HAVE_GETENTRYPY_GETRANDOM_RUNTIME) {
+ #ifdef PY_GETRANDOM
+diff -Naur a/Python/thread_pthread.h b/Python/thread_pthread.h
 --- a/Python/thread_pthread.h
 +++ b/Python/thread_pthread.h
-@@ -264,7 +264,11 @@ PyThread_get_thread_ident(void)
-     /* Jump through some hoops for Alpha OSF/1 */
+@@ -320,7 +320,11 @@ PyThread_get_thread_ident(void)
+     if (!initialized)
+         PyThread_init_thread();
      threadid = pthread_self();
- #if SIZEOF_PTHREAD_T <= SIZEOF_LONG
 +#ifdef __SWITCH__
-+    return (long) threadid - 1;
++    return (unsigned long) threadid - 1;
 +#else
-     return (long) threadid;
+     return (unsigned long) threadid;
 +#endif
- #else
-     return (long) *(long *) &threadid;
- #endif
-@@ -277,6 +281,7 @@ PyThread_exit_thread(void)
-     if (!initialized) {
-         exit(0);
-     }
-+    pthread_exit(0);
  }
  
- #ifdef USE_SEMAPHORES
-diff --git a/configure b/configure
-index 63d675312d..4ca558e3a6 100755
+ #ifdef PY_HAVE_THREAD_NATIVE_ID
+diff -Naur a/configure b/configure
 --- a/configure
 +++ b/configure
-@@ -3287,6 +3287,9 @@ then
- 	*-*-cygwin*)
+@@ -3302,8 +3302,11 @@ then
  		ac_sys_system=Cygwin
  		;;
+ 	*-*-vxworks*)
+-	    ac_sys_system=VxWorks
+-	    ;;
++		ac_sys_system=VxWorks
++		;;
 +	aarch64-none-elf*)
 +		ac_sys_system=Horizon
 +		;;
  	*)
  		# for now, limit cross builds to known configurations
  		MACHDEP="unknown"
-@@ -3333,6 +3336,9 @@ if test "$cross_compiling" = yes; then
- 	*-*-cygwin*)
- 		_host_cpu=
+@@ -3354,6 +3357,9 @@ if test "$cross_compiling" = yes; then
+ 	*-*-vxworks*)
+ 		_host_cpu=$host_cpu
  		;;
 +	aarch64-none-elf*)
 +		_host_cpu=$host_cpu
