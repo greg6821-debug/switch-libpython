@@ -13,7 +13,7 @@ on:
       - "**.txt"
       - "**.bash"
       - "**.yml"
-
+  workflow_dispatch:
 jobs:
   build-artifact:
     name: Build
