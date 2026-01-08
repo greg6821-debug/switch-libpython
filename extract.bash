@@ -1,7 +1,7 @@
 
-curl -LOC - https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tar.xz
-rm -rf Python-2.7.18
-tar -xf Python-2.7.18.tar.xz
-pushd Python-2.7.18
+curl -LOC - https://www.python.org/ftp/python/3.9.22/Python-3.9.22.tar.xz
+rm -rf Python-3.9.22
+tar -xf Python-3.9.22.tar.xz
+pushd Python-3.9.22
 patch -p1 < ../cpython.patch
 popd
