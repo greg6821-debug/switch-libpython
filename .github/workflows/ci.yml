@@ -22,7 +22,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         submodules: recursive
 
@@ -42,13 +42,13 @@ jobs:
       run: bash package-stdlib.bash
 
     - name: Upload stdlib artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python39-stdlib
         path: python39.zip
 
     - name: Upload prefix artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python39-switch
         path: python39-switch.tar.gz
@@ -60,12 +60,12 @@ jobs:
 
     steps:
     - name: Download stdlib artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python39-stdlib
 
     - name: Download prefix artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python39-switch
 
