@@ -333,3 +333,13 @@ diff -Naur a/configure b/configure
  	*)
  		# for now, limit cross builds to known configurations
  		MACHDEP="unknown"
+diff -Naur a/Modules/getpath.c b/Modules/getpath.c
+--- a/Modules/getpath.c
++++ b/Modules/getpath.c
+@@
++#ifdef __SWITCH__
++static PyStatus
++resolve_symlinks(PyPath *path) {
++    return PYSTATUS_OK();  /* заглушка для Switch */
++}
++#endif
