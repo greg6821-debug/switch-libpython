@@ -42,13 +42,13 @@ jobs:
     - name: upload stdlib artifact
       uses: actions/upload-artifact@master
       with:
-        name: python27-stdlib
-        path: python27.zip
+        name: python39-stdlib
+        path: python39.zip
     - name: upload prefix artifact
       uses: actions/upload-artifact@master
       with:
-        name: python27-switch
-        path: python27-switch.tar.gz
+        name: python39-switch
+        path: python39-switch.tar.gz
 
   create-release:
     needs: [build-artifact]
@@ -58,12 +58,12 @@ jobs:
     - name: Download stdlib artifact
       uses: actions/download-artifact@v1
       with:
-        name: python27-stdlib
+        name: python39-stdlib
 
     - name: Download prefix artifact
       uses: actions/download-artifact@v1
       with:
-        name: python27-switch
+        name: python39-switch
 
     - name: Create release
       uses: marvinpinto/action-automatic-releases@latest
@@ -71,5 +71,5 @@ jobs:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: "${{ contains(github.ref, '-rc') }}"
         files: |
-          python27-stdlib/*
-          python27-switch/*
+          python39-stdlib/*
+          python39-switch/*
