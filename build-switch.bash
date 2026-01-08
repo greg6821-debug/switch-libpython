@@ -21,10 +21,6 @@ CONFIG_SITE="config.site" \
   --disable-shared \
   --enable-optimizations
 
-LDFLAGS="-specs=$DEVKITPRO/libnx/switch.specs $LDFLAGS" CONFIG_SITE="config.site" --host=aarch64-none-elf --build=$(../config.guess) 
-
-
-  
 popd
 cp ../cpython_config_files/Setup.local build-switch/Modules
 pushd build-switch
