@@ -35,9 +35,9 @@ docker exec switchdev apt-get install -y \
 
 # Python for building CPython 3.9
 docker exec switchdev apt-get install -y \
-  python3 \
-  python3-dev \
-  python3-distutils
+  python3.9 \
+  python3.9-dev \
+  python3.9-distutils
 
 # sanity check
-docker exec switchdev python3 --version
+docker exec switchdev python3.9 --version
