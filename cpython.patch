@@ -349,4 +349,5 @@ diff -Naur a/Modules/getpath.c b/Modules/getpath.c
 +resolve_symlinks(wchar_t **path_p) {
 +    return _PyStatus_OK();
 +}
-+#endif
+ #endif
+ 
