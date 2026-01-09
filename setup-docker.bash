@@ -5,7 +5,7 @@ docker run -d \
   --name switchdev \
   --workdir /build/git \
   -v "${PWD}:/build/git" \
-  devkitpro/devkita64:20210514 \
+  devkitpro/devkita64:20240409 \
   tail -f /dev/null
 
 # devkitPro helpers
