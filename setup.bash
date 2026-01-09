@@ -1,6 +1,6 @@
 
 apt-get -y update
-apt-get -y install python3 python3-pip p7zip-full
+apt-get -y install python3.9 python3-pip p7zip-full
 apt-get -y install apt-transport-https ca-certificates curl gnupg lsb-release
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 apt-get -y remove docker docker-engine docker.io containerd runc
