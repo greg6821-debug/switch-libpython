@@ -5,6 +5,7 @@ set -e
 export PREFIXARCHIVE=$(realpath python39-switch.tar.gz)
 export DEVKITPRO=/opt/devkitpro
 
+# --- Инициализация devkitPro/portlibs Switch ---
 source $DEVKITPRO/switchvars.sh
 
 # --- Переходим в исходники Python ---
@@ -17,10 +18,21 @@ pushd build-switch
 mkdir -p local_prefix
 export LOCAL_PREFIX=$(realpath local_prefix)
 
+# --- Настройка toolchain для cross-build ---
+export CC=aarch64-none-elf-gcc
+export CXX=aarch64-none-elf-g++
+export LD=aarch64-none-elf-ld
+export AR=aarch64-none-elf-ar
+export RANLIB=aarch64-none-elf-ranlib
+export SPEC="$DEVKITPRO/libnx/switch.specs"
+
+export LDFLAGS="-specs=$SPEC -L$DEVKITPRO/portlibs/switch/lib $LDFLAGS"
+export CPPFLAGS="-I$DEVKITPRO/portlibs/switch/include $CPPFLAGS"
+export CFLAGS="-O2 -march=armv8-a+crc+crypto -mtune=cortex-a57 -fPIC -fPIE $CFLAGS"
+
 # --- Конфигурация cross-build ---
 PYTHON_FOR_BUILD=python3 \
-LDFLAGS="-specs=$DEVKITPRO/libnx/libnx.specs $LDFLAGS" \
-CONFIG_SITE="config.site" \
+CONFIG_SITE=config.site \
 ../configure \
   --host=aarch64-none-elf \
   --build="$(../config.guess)" \
@@ -28,9 +40,12 @@ CONFIG_SITE="config.site" \
   --disable-ipv6 \
   --disable-shared \
   --without-pymalloc \
-  --enable-optimizations
+  --enable-optimizations \
+  LDFLAGS="$LDFLAGS" \
+  CPPFLAGS="$CPPFLAGS" \
+  CFLAGS="$CFLAGS"
 
-# --- Копируем локальный Setup для сборки модулей ---
+# --- Копируем локальный Setup для статических модулей ---
 cp ../cpython_config_files/Setup.local Modules
 
 # --- Сборка только статической библиотеки ---
@@ -50,7 +65,7 @@ popd
 mkdir -p ./python39-switch
 mv $LOCAL_PREFIX/* ./python39-switch/
 
-# --- Минимизация библиотеки ---
+# --- Минимизация библиотеки и кэширование .pyc ---
 pushd python39-switch/lib/python3.9
 rm -rf test lib2to3/tests
 rm subprocess.py
