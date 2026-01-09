@@ -336,7 +336,7 @@ diff -Naur a/configure b/configure
 diff -Naur a/Modules/getpath.c b/Modules/getpath.c
 --- a/Modules/getpath.c
 +++ b/Modules/getpath.c
-@@ -10,5 +10,12 @@
+@@ -10,6 +10,14 @@
  #include <string.h>
  
  #ifdef __APPLE__
@@ -348,4 +348,5 @@ diff -Naur a/Modules/getpath.c b/Modules/getpath.c
 +static PyStatus
 +resolve_symlinks(wchar_t **path_p) {
 +    return _PyStatus_OK();
- #endif
++}
++#endif
