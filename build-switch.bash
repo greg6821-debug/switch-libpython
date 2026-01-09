@@ -1,7 +1,7 @@
 set -e
 
 export DEVKITPRO=/opt/devkitpro
-export PYTHON_FOR_BUILD=/usr/bin/python3.9
+#export PYTHON_FOR_BUILD=/usr/bin/python3.9
 
 source $DEVKITPRO/switchvars.sh
 pushd Python-3.9.22
@@ -10,7 +10,8 @@ cp ../cpython_config_files/config.site build-switch
 pushd build-switch
 mkdir local_prefix
 export LOCAL_PREFIX=$(realpath local_prefix)
-$PYTHON_FOR_BUILD ../configure \
+#$PYTHON_FOR_BUILD 
+../configure \
   --host=aarch64-none-elf \
   --build=$(../config.guess) \
   --prefix="$LOCAL_PREFIX" \
