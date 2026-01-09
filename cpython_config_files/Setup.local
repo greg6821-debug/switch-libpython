@@ -5,7 +5,7 @@
 binascii binascii.c
 _struct _struct.c
 _collections _collectionsmodule.c
-operator operator.c
+_operator _operator.c
 itertools itertoolsmodule.c
 time timemodule.c
 math mathmodule.c _math.c
