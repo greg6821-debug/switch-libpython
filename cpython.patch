@@ -333,21 +333,3 @@ diff -Naur a/configure b/configure
  	*)
  		# for now, limit cross builds to known configurations
  		MACHDEP="unknown"
-diff -Naur a/Modules/getpath.c b/Modules/getpath.c
---- a/Modules/getpath.c
-+++ b/Modules/getpath.c
-@@ -10,6 +10,14 @@
- #include <string.h>
- 
- #ifdef __APPLE__
- #  include <mach-o/dyld.h>
-+#endif
-+
-+#ifdef __SWITCH__
-+/* Заглушка resolve_symlinks для Nintendo Switch */
-+static PyStatus
-+resolve_symlinks(wchar_t **path_p) {
-+    return _PyStatus_OK();
-+}
- #endif
- 
