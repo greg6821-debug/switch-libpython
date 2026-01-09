@@ -8,13 +8,6 @@ docker run -d \
   devkitpro/devkita64:20240827 \
   tail -f /dev/null
 
-# devkitPro helpers
-curl -LOC - \
-  https://github.com/uyjulian/pacman-packages/releases/download/v2.2.3-1-pkgbuild-helpers/devkitpro-pkgbuild-helpers-2.2.3-1-any.pkg.tar.xz
-
-docker exec switchdev dkp-pacman -U --noconfirm \
-  devkitpro-pkgbuild-helpers-2.2.3-1-any.pkg.tar.xz
-
 # ---- FIX DEBIAN BUSTER EOL ----
 docker exec switchdev bash -c '
   sed -i "s|deb.debian.org|archive.debian.org|g" /etc/apt/sources.list &&
