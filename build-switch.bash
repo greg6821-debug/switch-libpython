@@ -1,9 +1,12 @@
 set -e
 
+export PREFIXARCHIVE=$(realpath python39-switch.tar.gz)
 export DEVKITPRO=/opt/devkitpro
 
 source $DEVKITPRO/switchvars.sh
-pushd cpython
+
+pushd Python-3.9.22
+#pushd cpython
 mkdir build-switch
 cp ../cpython_config_files/config.site build-switch
 pushd build-switch
