@@ -12,6 +12,7 @@ cp ../cpython_config_files/config.site build-switch
 pushd build-switch
 mkdir local_prefix
 export LOCAL_PREFIX=$(realpath local_prefix)
+PYTHON_FOR_BUILD=python3 \
 ../configure \
   --host=aarch64-none-elf \
   --build=$(../config.guess) \
