@@ -21,6 +21,11 @@ CONFIG_SITE="config.site" \
   --disable-shared \
   --enable-optimizations
 
+# fix missing operator.c for Switch
+pushd Modules
+ln -s _operator.c operator.c
+popd
+
 popd
 cp ../cpython_config_files/Setup.local build-switch/Modules
 pushd build-switch
