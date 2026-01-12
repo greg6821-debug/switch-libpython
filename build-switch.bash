@@ -16,7 +16,10 @@ export LOCAL_PREFIX=$(realpath local_prefix)
   --prefix="$LOCAL_PREFIX" \
   --disable-ipv6 \
   --disable-shared \
+  --enable-optimizations \
+  --without-ensurepip \
   --without-pymalloc \
+  ac_cv_file__dev_ptmx=no ac_cv_file__dev_ptc=no \
   LDFLAGS="-specs=$DEVKITPRO/libnx/switch.specs $LDFLAGS" \
   CONFIG_SITE="config.site"
   
