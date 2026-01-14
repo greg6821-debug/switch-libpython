@@ -1,7 +1,5 @@
 set -e
 
-export PREFIXARCHIVE=$(realpath python39-switch.tar.gz)
-
 source $DEVKITPRO/switchvars.sh
 pushd Python-3.9.22
 mkdir build-switch
@@ -33,5 +31,3 @@ make libinstall
 make inclinstall
 popd
 popd
-
-tar -czvf $PREFIXARCHIVE -C $LOCAL_PREFIX .
