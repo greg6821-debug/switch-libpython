@@ -51,7 +51,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: python39-switch
-        path: local_prefix
+        path: python-output
 
   create-release:
     needs: build-artifact
