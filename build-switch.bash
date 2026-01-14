@@ -31,3 +31,7 @@ make libinstall
 make inclinstall
 popd
 popd
+
+
+mkdir -p python-output
+cp -r $LOCAL_PREFIX/* python-output/
