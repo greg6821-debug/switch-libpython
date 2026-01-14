@@ -1,0 +1,309 @@
+diff --Naur "a/Lib/zipimport.py" b/Lib/zipimport.py
+--- "a/Lib/zipimport.py"	
++++ b/Lib/zipimport.py
+@@ -23,6 +23,55 @@ import marshal  # for loads
+ import sys  # for modules
+ import time  # for mktime
+ 
++# Function to check if a module is builtin
++def _is_module_builtin(fullname):
++    """Check if a module is built-in (including those registered via PyImport_ExtendInittab)."""
++    try:
++        import _imp
++        # Try the standard check first
++        if _imp.is_builtin(fullname):
++            return True
++        # Also check if it can be loaded dynamically
++        try:
++            # For modules like pygame_sdl2.error that might not be in standard lists
++            spec = _imp.find_spec(fullname)
++            if spec and spec.origin and 'built-in' in spec.origin:
++                return True
++        except (AttributeError, ImportError):
++            pass
++    except ImportError:
++        pass
++    return False
++
++# Добавим после импортов, перед классами
++
++def _is_builtin_module(fullname):
++    """Check if a module is a built-in module (registered via PyImport_ExtendInittab)."""
++    try:
++        import _imp
++        # First check standard built-in modules
++        if _imp.is_builtin(fullname):
++            return True
++        
++        # For submodules registered via PyImport_ExtendInittab
++        # We need to check if they can be loaded as built-in
++        # This handles cases like 'pygame_sdl2.error'
++        try:
++            # Try to create the module as built-in
++            module = _imp.create_builtin(fullname)
++            if module is not None:
++                return True
++        except (ImportError, AttributeError, OSError):
++            pass
++            
++        # Also check sys.builtin_module_names for top-level modules
++        if fullname in sys.builtin_module_names:
++            return True
++            
++    except ImportError:
++        pass
++    return False
++
+ __all__ = ['ZipImportError', 'zipimporter']
+ 
+ 
+@@ -107,33 +156,37 @@ class zipimporter:
+     # full path if it's a possible namespace portion, None if we
+     # can't load it.
+     def find_loader(self, fullname, path=None):
+-        """find_loader(fullname, path=None) -> self, str or None.
+-
+-        Search for a module specified by 'fullname'. 'fullname' must be the
+-        fully qualified (dotted) module name. It returns the zipimporter
+-        instance itself if the module was found, a string containing the
+-        full path name if it's possibly a portion of a namespace package,
+-        or None otherwise. The optional 'path' argument is ignored -- it's
+-        there for compatibility with the importer protocol.
+-        """
+-        mi = _get_module_info(self, fullname)
+-        if mi is not None:
+-            # This is a module or package.
+-            return self, []
+-
+-        # Not a module or regular package. See if this is a directory, and
+-        # therefore possibly a portion of a namespace package.
+-
+-        # We're only interested in the last path component of fullname
+-        # earlier components are recorded in self.prefix.
+-        modpath = _get_module_path(self, fullname)
+-        if _is_dir(self, modpath):
+-            # This is possibly a portion of a namespace
+-            # package. Return the string representing its path,
+-            # without a trailing separator.
+-            return None, [f'{self.archive}{path_sep}{modpath}']
+-
+-        return None, []
++    """find_loader(fullname, path=None) -> self, str or None.
++
++    Search for a module specified by 'fullname'. 'fullname' must be the
++    fully qualified (dotted) module name. It returns the zipimporter
++    instance itself if the module was found, a string containing the
++    full path name if it's possibly a portion of a namespace package,
++    or None otherwise. The optional 'path' argument is ignored -- it's
++    there for compatibility with the importer protocol.
++    """
++    # First check if it's a builtin module
++    if _is_module_builtin(fullname):
++        return None, []  # Let BuiltinImporter handle it
++    
++    mi = _get_module_info(self, fullname)
++    if mi is not None:
++        # This is a module or package.
++        return self, []
++
++    # Not a module or regular package. See if this is a directory, and
++    # therefore possibly a portion of a namespace package.
++
++    # We're only interested in the last path component of fullname
++    # earlier components are recorded in self.prefix.
++    modpath = _get_module_path(self, fullname)
++    if _is_dir(self, modpath):
++        # This is possibly a portion of a namespace
++        # package. Return the string representing its path,
++        # without a trailing separator.
++        return None, [f'{self.archive}{path_sep}{modpath}']
++
++    return None, []
+ 
+ 
+     # Check whether we can satisfy the import of the module named by
+@@ -232,41 +285,69 @@ class zipimporter:
+ 
+     # Load and return the module named by 'fullname'.
+     def load_module(self, fullname):
+-        """load_module(fullname) -> module.
+-
+-        Load the module specified by 'fullname'. 'fullname' must be the
+-        fully qualified (dotted) module name. It returns the imported
+-        module, or raises ZipImportError if it wasn't found.
+-        """
++    try:
+         code, ispackage, modpath = _get_module_code(self, fullname)
+-        mod = sys.modules.get(fullname)
+-        if mod is None or not isinstance(mod, _module_type):
+-            mod = _module_type(fullname)
+-            sys.modules[fullname] = mod
+-        mod.__loader__ = self
++    except ZipImportError:
++        raise
++    
++    mod = sys.modules.get(fullname)
++    if mod is None or not isinstance(mod, _module_type):
++        mod = _module_type(fullname)
++        sys.modules[fullname] = mod
++    mod.__loader__ = self
+ 
+-        try:
+-            if ispackage:
+-                # add __path__ to the module *before* the code gets
+-                # executed
+-                path = _get_module_path(self, fullname)
+-                fullpath = _bootstrap_external._path_join(self.archive, path)
+-                mod.__path__ = [fullpath]
+-
+-            if not hasattr(mod, '__builtins__'):
+-                mod.__builtins__ = __builtins__
+-            _bootstrap_external._fix_up_module(mod.__dict__, fullname, modpath)
+-            exec(code, mod.__dict__)
+-        except:
+-            del sys.modules[fullname]
+-            raise
++    try:
++        # Проверяем, является ли модуль встроенным
++        if isinstance(code, _BuiltinModuleMarker):
++            # Пытаемся загрузить встроенный модуль
++            # Это может быть C-extension, зарегистрированный через PyImport_ExtendInittab
++            import _imp
++            try:
++                # Пробуем загрузить как встроенный модуль
++                builtin_module = _imp.load_dynamic(fullname, None)
++                if builtin_module is not None:
++                    # Копируем атрибуты из загруженного модуля
++                    mod.__dict__.update(builtin_module.__dict__)
++                    mod.__name__ = builtin_module.__name__
++                    _bootstrap._verbose_message('import {} # loaded as builtin', fullname)
++                    return mod
++            except (ImportError, AttributeError):
++                pass
++            
++            # Если не удалось загрузить как встроенный, пробуем стандартный импорт
++            # Это может сработать для модулей, зарегистрированных через PyImport_ExtendInittab
++            try:
++                exec(f'import {fullname}', mod.__dict__)
++                imported = mod.__dict__[fullname.split('.')[-1]]
++                mod.__dict__.update(imported.__dict__)
++                mod.__name__ = imported.__name__
++                _bootstrap._verbose_message('import {} # loaded via PyImport_ExtendInittab', fullname)
++                return mod
++            except (ImportError, KeyError):
++                raise ZipImportError(f"can't find module {fullname!r} (builtin)", name=fullname)
++        
++        # Оригинальная логика для обычных модулей
++        if ispackage:
++            # add __path__ to the module *before* the code gets
++            # executed
++            path = _get_module_path(self, fullname)
++            fullpath = _bootstrap_external._path_join(self.archive, path)
++            mod.__path__ = [fullpath]
++
++        if not hasattr(mod, '__builtins__'):
++            mod.__builtins__ = __builtins__
++        _bootstrap_external._fix_up_module(mod.__dict__, fullname, modpath)
++        exec(code, mod.__dict__)
++    except:
++        del sys.modules[fullname]
++        raise
+ 
+-        try:
+-            mod = sys.modules[fullname]
+-        except KeyError:
+-            raise ImportError(f'Loaded module {fullname!r} not found in sys.modules')
+-        _bootstrap._verbose_message('import {} # loaded from Zip {}', fullname, modpath)
+-        return mod
++    try:
++        mod = sys.modules[fullname]
++    except KeyError:
++        raise ImportError(f'Loaded module {fullname!r} not found in sys.modules')
++    _bootstrap._verbose_message('import {} # loaded from Zip {}', fullname, modpath)
++    return mod
+ 
+ 
+     def get_resource_reader(self, fullname):
+@@ -319,6 +400,17 @@ def _is_dir(self, path):
+ 
+ # Return some information about a module.
+ def _get_module_info(self, fullname):
++    # Сначала проверяем встроенные модули
++    try:
++        import _imp
++        if _imp.is_builtin(fullname):
++            # Возвращаем False (не пакет), но с специальным флагом
++            # В реальности нужно расширить возвращаемое значение
++            return False  # или специальное значение
++    except (ImportError, AttributeError):
++        pass
++    
++    # Оригинальная логика
+     path = _get_module_path(self, fullname)
+     for suffix, isbytecode, ispackage in _zip_searchorder:
+         fullpath = path + suffix
+@@ -326,6 +418,13 @@ def _get_module_info(self, fullname):
+             return ispackage
+     return None
+ 
++def _check_builtin_module(fullname):
++    """Проверяет, является ли модуль встроенным"""
++    try:
++        import _imp
++        return _imp.is_builtin(fullname)
++    except (ImportError, AttributeError):
++        return False
+ 
+ # implementation
+ 
+@@ -680,22 +779,24 @@ def _get_mtime_and_size_of_source(self, path):
+ # Given a path to a .pyc file in the archive, return the
+ # contents of the matching .py file, or None if no source
+ # is available.
+-def _get_pyc_source(self, path):
+-    # strip 'c' or 'o' from *.py[co]
+-    assert path[-1:] in ('c', 'o')
+-    path = path[:-1]
+-
+-    try:
+-        toc_entry = self._files[path]
+-    except KeyError:
+-        return None
+-    else:
+-        return _get_data(self.archive, toc_entry)
+-
+-
+-# Get the code object associated with the module specified by
+-# 'fullname'.
+ def _get_module_code(self, fullname):
++    # Сначала проверяем, является ли модуль встроенным
++    import sys
++    
++    # Проверяем, есть ли модуль в sys.builtin_module_names
++    # Но sys.builtin_module_names содержит только модули верхнего уровня
++    # Поэтому также пробуем импортировать через _imp
++    try:
++        import _imp
++        # Пробуем найти встроенный модуль
++        if _imp.is_builtin(fullname):
++            # Для встроенных модулей возвращаем специальный маркер
++            # Чтобы load_module мог правильно их обработать
++            return _BuiltinModuleMarker(fullname), False, f"<builtin module {fullname}>"
++    except (ImportError, AttributeError):
++        pass
++    
++    # Оригинальный код продолжает работу
+     path = _get_module_path(self, fullname)
+     for suffix, isbytecode, ispackage in _zip_searchorder:
+         fullpath = path + suffix
+@@ -720,6 +821,10 @@ def _get_module_code(self, fullname):
+     else:
+         raise ZipImportError(f"can't find module {fullname!r}", name=fullname)
+ 
++class _BuiltinModuleMarker:
++    """Маркер для встроенных модулей, которые должны быть загружены через PyImport_ExtendInittab"""
++    def __init__(self, fullname):
++        self.fullname = fullname
+ 
+ class _ZipImportResourceReader:
+     """Private class used to support ZipImport.get_resource_reader().
