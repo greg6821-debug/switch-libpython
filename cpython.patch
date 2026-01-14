@@ -1,18 +1,3 @@
-diff --Naur a/Lib/importlib/_bootstrap.py b/Lib/importlib/_bootstrap.py
---- a/Lib/importlib/_bootstrap.py
-+++ b/Lib/importlib/_bootstrap.py
-@@ -941,7 +941,10 @@ class BuiltinImporter:
- return __spec__
-             else:
-                 return spec
-     else:
--        return None
-+        if _imp.is_builtin(name):
-+            return spec_from_loader(name, BuiltinImporter,
-+                                    origin=BuiltinImporter._ORIGIN)
-+        return None
- 
- 
 diff -Naur a/Include/pyport.h b/Include/pyport.h
 --- a/Include/pyport.h
 +++ b/Include/pyport.h
