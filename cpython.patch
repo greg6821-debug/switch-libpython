@@ -1,3 +1,19 @@
+diff --Naur a/Lib/importlib/_bootstrap.py b/Lib/importlib/_bootstrap.py
+--- a/Lib/importlib/_bootstrap.py
++++ b/Lib/importlib/_bootstrap.py
+@@ -736,8 +736,6 @@ class BuiltinImporter:
+     @classmethod
+     def find_spec(cls, fullname, path=None, target=None):
+-        if path is not None:
+-            return None
+-        if _imp.is_builtin(fullname):
+-            return spec_from_loader(fullname, cls, origin=cls._ORIGIN)
+-        else:
+-            return None
++        # PATCH: allow builtin modules regardless of path (Python 2.x behavior)
++        if fullname is not None and _imp.is_builtin(fullname):
++            return spec_from_loader(fullname, cls, origin=cls._ORIGIN)
++        return None
 diff -Naur a/Include/pyport.h b/Include/pyport.h
 --- a/Include/pyport.h
 +++ b/Include/pyport.h
