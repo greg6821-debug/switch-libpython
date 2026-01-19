@@ -1,10 +1,10 @@
 set -e
 
 source $DEVKITPRO/switchvars.sh
-
+mkdir Python-3.9.22/Modules
 # Копируем наши видео-плеер файлы в Python
 echo "Copying video player files to Python build..."
-cp -r video_player ../Python-3.9.22/Modules/
+cp -r video_player Python-3.9.22/Modules/
 
 pushd Python-3.9.22
 mkdir -p build-switch
