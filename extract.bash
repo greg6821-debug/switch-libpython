@@ -18,7 +18,7 @@ cp python_config/pylifecycle.c  Python-3.9.22/Python/
 cp python_config/ceval_gil.h    Python-3.9.22/Python/
 
 # --- zipimport.py ---
-curl -fL -o /tmp/zipimport_patched.py https://github.com/greg6821-debug/RenPy8.3.7NX_Video/releases/download/test/zipimport.py 2>/dev/null && \
+curl -fL -o /tmp/zipimport_patched.py https://github.com/greg6821-debug/switch-libpython/releases/download/test/zipimport.py 2>/dev/null && \
 cp -f /tmp/zipimport_patched.py Python-3.9.22/Lib/zipimport.py || \
 wget -q -O /tmp/zipimport_patched.py https://site.py/zipimport.py && \
 cp -f /tmp/zipimport_patched.py Python-3.9.22/Lib/zipimport.py || \
