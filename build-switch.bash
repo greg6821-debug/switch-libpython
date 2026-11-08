@@ -14,10 +14,12 @@ export LOCAL_PREFIX=$(realpath local_prefix)
   --host=aarch64-none-elf \
   --build=$(../config.guess) \
   --prefix="$LOCAL_PREFIX" \
+  --with-build-python="$(command -v python3.12 || command -v python3)" \
   --disable-ipv6 \
   --disable-shared \
   --without-pymalloc \
-  LDFLAGS="-specs=$DEVKITPRO/libnx/switch.specs $LDFLAGS" \
+  CPPFLAGS="-D__SWITCH__ -I$DEVKITPRO/libnx/include -I$DEVKITPRO/portlibs/switch/include" \
+  LDFLAGS="-specs=$DEVKITPRO/libnx/switch.specs -L$DEVKITPRO/portlibs/switch/lib $LDFLAGS" \
   CONFIG_SITE="config.site"
 
 popd

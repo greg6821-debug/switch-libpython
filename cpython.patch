@@ -1,7 +1,17 @@
 diff -Naur a/Include/pyport.h mod/Include/pyport.h
 --- a/Include/pyport.h	2026-11-08 19:16:11.450582369 +0000
-+++ b/Include/pyport.h	2026-11-08 19:17:40.067150718 +0000
-@@ -684,7 +684,7 @@
++++ b/Include/pyport.h	2026-11-08 21:23:59.791296017 +0000
+@@ -129,6 +129,9 @@
+ 
+ #elif HAVE_SSIZE_T
+ typedef ssize_t         Py_ssize_t;
++#   ifndef SSIZE_MAX
++#      define SSIZE_MAX __LONG_MAX__
++#   endif
+ #   define PY_SSIZE_T_MAX SSIZE_MAX
+ #elif SIZEOF_VOID_P == SIZEOF_SIZE_T
+ typedef Py_intptr_t     Py_ssize_t;
+@@ -684,7 +687,7 @@
  #  error "Py_TRACE_REFS ABI is not compatible with release and debug ABI"
  #endif
  
