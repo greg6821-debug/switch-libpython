@@ -53,7 +53,6 @@ copied over the freshly built stdlib by `package-stdlib.bash`:
 
 * `subprocess.py` - empty stub (no process spawning on Switch)
 * `getpass.py` - falls back to `_otrhlibnx.getUserName()` then `"Player"`
-* `zipfile.py` - Switch intro/webm CRC check (`_LargeZipFile`)
 * `importlib/__init__.py` - shim that resolves builtin modules through
   `_imp.is_builtin` / `BuiltinImporter`
 
