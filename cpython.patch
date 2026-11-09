@@ -175,3 +175,100 @@ diff -Naur a/configure mod/configure
    *) :
       ;;
  esac
+
+diff -Naur a/Python/pystate.c b/Python/pystate.c
+--- a/Python/pystate.c
++++ b/Python/pystate.c
+@@ -65,13 +65,18 @@
+ _Py_thread_local PyThreadState *_Py_tss_tstate = NULL;
+ #endif
+ 
++#ifdef __SWITCH__
++PyThreadState *_Py_switch_current_tstate = NULL;
++#endif
++
+ static inline PyThreadState *
+ current_fast_get(_PyRuntimeState *Py_UNUSED(runtime))
+ {
+-#ifdef HAVE_THREAD_LOCAL
++#ifdef __SWITCH__
++    return _Py_switch_current_tstate;
++#elif defined(HAVE_THREAD_LOCAL)
+     return _Py_tss_tstate;
+ #else
+-    // XXX Fall back to the PyThread_tss_*() API.
+ #  error "no supported thread-local variable storage classifier"
+ #endif
+ }
+@@ -80,10 +85,11 @@
+ current_fast_set(_PyRuntimeState *Py_UNUSED(runtime), PyThreadState *tstate)
+ {
+     assert(tstate != NULL);
+-#ifdef HAVE_THREAD_LOCAL
++#ifdef __SWITCH__
++    _Py_switch_current_tstate = tstate;
++#elif defined(HAVE_THREAD_LOCAL)
+     _Py_tss_tstate = tstate;
+ #else
+-    // XXX Fall back to the PyThread_tss_*() API.
+ #  error "no supported thread-local variable storage classifier"
+ #endif
+ }
+@@ -91,10 +97,11 @@
+ static inline void
+ current_fast_clear(_PyRuntimeState *Py_UNUSED(runtime))
+ {
+-#ifdef HAVE_THREAD_LOCAL
++#ifdef __SWITCH__
++    _Py_switch_current_tstate = NULL;
++#elif defined(HAVE_THREAD_LOCAL)
+     _Py_tss_tstate = NULL;
+ #else
+-    // XXX Fall back to the PyThread_tss_*() API.
+ #  error "no supported thread-local variable storage classifier"
+ #endif
+ }
+
+
+diff -Naur a/Include/internal/pycore_pstate.h b/Include/internal/pycore_pstate.h
+--- a/Include/internal/pycore_pystate.h
++++ b/Include/internal/pycore_pstate.h
+@@ -75,6 +75,9 @@
+ #if defined(HAVE_THREAD_LOCAL) && !defined(Py_BUILD_CORE_MODULE)
+ extern _Py_thread_local PyThreadState *_Py_tss_tstate;
+ #endif
++#ifdef __SWITCH__
++extern PyThreadState *_Py_switch_current_tstate;
++#endif
+ PyAPI_DATA(PyThreadState *) _PyThreadState_GetCurrent(void);
+ 
+ #ifndef NDEBUG
+@@ -94,7 +97,11 @@
+ _PyThreadState_GET(void)
+ {
+ #if defined(HAVE_THREAD_LOCAL) && !defined(Py_BUILD_CORE_MODULE)
++#ifdef __SWITCH__
++    return _Py_switch_current_tstate;
++#else
+     return _Py_tss_tstate;
++#endif
+ #else
+     return _PyThreadState_GetCurrent();
+ #endif
+
+
+diff -Naur a/Objects/unicodeobject.c b/Objects/unicodeobject.c
+--- a/Objects/unicodeobject.c
++++ b/Objects/unicodeobject.c
+@@ -15521,6 +15521,10 @@
+ static int
+ config_get_codec_name(wchar_t **config_encoding)
+ {
++#ifdef __SWITCH__
++    if (*config_encoding == NULL) { wchar_t *u = _PyMem_RawWcsdup(L"utf-8"); if (!u) { PyErr_NoMemory(); return -1; } *config_encoding = u; } return 0;
++#endif
++
+     char *encoding;
+     if (encode_wstr_utf8(*config_encoding, &encoding, "stdio_encoding") < 0) {
+         return -1;
+

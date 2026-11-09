@@ -1,0 +1,27 @@
+ac_cv_file__dev_ptmx=no
+ac_cv_file__dev_ptc=no
+ac_cv_lib_dl_dlopen=no
+
+ac_cv_func_statvfs=no
+ac_cv_header_sys_resource_h=no
+
+# --- Switch / libnx function availability ---
+# libnx/newlib does not provide process groups, symlinks, chroot,
+# fdatasync or fchdir on the Switch (sdmc: is a flat FAT/exFAT device).
+# In CPython 3.12 these are gated by configure checks rather than by
+# source-level #undef blocks (as they were in 3.9), so we pin them
+# down here for a deterministic cross build.
+ac_cv_func_getgroups=no
+ac_cv_func_setgroups=no
+ac_cv_func_getpwuid=no
+ac_cv_func_getpwuid_r=no
+ac_cv_func_symlink=no
+ac_cv_func_symlinkat=no
+ac_cv_func_chroot=no
+ac_cv_func_fdatasync=no
+ac_cv_func_fchdir=no
+
+# pthreads on Switch is provided by libnx (pthread-nx); the deprecated
+# old-style getsrv/setsrv APIs are not relevant, but keep the thread
+# detection conservative.
+ac_cv_header_sys_umtx_h=no
