@@ -8,8 +8,8 @@ export PYSTUB_DIR=$(realpath pystub)
 
 rm -rf $LIB_BUILD_DIR $PYTHONLIBZIP
 cp -as $LOCAL_PREFIX/lib/python3.12 $LIB_BUILD_DIR
-rm -r $LIB_BUILD_DIR/test
-rm -r $LIB_BUILD_DIR/lib2to3/tests
+rm -rf $LIB_BUILD_DIR/test
+rm -rf $LIB_BUILD_DIR/lib2to3/tests
 
 # Replace Switch-specific stdlib modules with the patched stubs.
 # These files are required so the interpreter behaves correctly on

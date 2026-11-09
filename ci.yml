@@ -1,0 +1,85 @@
+name: Continuous Integration
+
+on:
+  push:
+    paths:
+      - "**.patch"
+      - "**.txt"
+      - "**.bash"
+      - "**.yml"
+      - "**.py"
+      - "**.local"
+      - "**.site"
+  pull_request:
+    paths:
+      - "**.patch"
+      - "**.txt"
+      - "**.bash"
+      - "**.yml"
+      - "**.py"
+      - "**.local"
+      - "**.site"
+  workflow_dispatch:
+
+jobs:
+  build-artifact:
+    name: Build
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup environment
+      run: sudo bash setup.bash
+
+    - name: Setup Docker
+      run: sudo bash setup-docker.bash
+
+    - name: Extract
+      run: bash extract.bash
+
+    - name: Config and build
+      run: bash build-switch-docker.bash
+
+    - name: Package stdlib
+      run: bash package-stdlib.bash
+
+    - name: Upload stdlib artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: python312-stdlib
+        path: python312.zip
+
+    - name: Upload prefix artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: python312-switch
+        path: python312-switch.tar.gz
+
+  create-release:
+    needs: build-artifact
+    runs-on: ubuntu-22.04
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+    - name: Download stdlib artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: python312-stdlib
+
+    - name: Download prefix artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: python312-switch
+
+    - name: Create release
+      uses: marvinpinto/action-automatic-releases@latest
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        prerelease: ${{ contains(github.ref, '-rc') }}
+        files: |
+          python312.zip
+          python312-switch.tar.gz
